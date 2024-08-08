@@ -1,4 +1,5 @@
 .DS_Store
 .aws-sam/**
+infrastructure/.aws-sam/**
 .idea/**
 .vscode/**
