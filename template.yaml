@@ -20,6 +20,10 @@ Parameters:
     Description: Subnets to assign to the Load Balancer
     Type: CommaDelimitedList
 
+  networkInterfaceSubnet:
+    Description: The subnet to use for the ELB Network Interface
+    Type: String
+
   LogLevel:
     Description: setting for the log level of the functions
     Type: String
@@ -151,6 +155,14 @@ Resources:
           FromPort: -1
           ToPort: -1
           CidrIp: 0.0.0.0/0
+
+  CiesApplicationNetworkInterface:
+    Description: "This interface is used by the CIES Application Load Balancer"
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SecurityGroups:
+        - !GetAtt CiesApplicationLoadBalancerSecurityGroup.GroupId
+      SubnetId: !Ref networkInterfaceSubnet
 
   CiesApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer

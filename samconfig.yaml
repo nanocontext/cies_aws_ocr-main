@@ -28,6 +28,7 @@ dev:
             - LogLevel=DEBUG
             - stage=dev
             - subnets=subnet-036a2ccb601ab0463,subnet-03a759ff00a2b2174
+            - networkInterfaceSubnet=subnet-036a2ccb601ab0463
             - StatusFunctionRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-status-function-dev
             - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-dev
             - ALBVisibility=internal
@@ -50,6 +51,7 @@ preprod:
             - LogLevel=INFO
             - stage=prprd
             - subnets=subnet-0ffcf91a8634ae2c6,subnet-054227598f4a06140
+            - networkInterfaceSubnet=subnet-0ffcf91a8634ae2c6
             - StatusFunctionRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-status-function-preprod
             - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-preprod
             - ALBVisibility=internal
@@ -72,6 +74,7 @@ prod:
             - LogLevel=WARN
             - stage=prod
             - subnets=subnet-0505255c5fca62d8a,subnet-027cdb68d9594cb6a
+            - networkInterfaceSubnet=subnet-0505255c5fca62d8a
             - StatusFunctionRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-status-function-prod
             - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-prod
             - ALBVisibility=internal
@@ -94,6 +97,7 @@ ctb:
             - stage=local
             - LogLevel=DEBUG
             - subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf
+            - networkInterfaceSubnet=subnet-93aac8cf
             - StatusFunctionRole=arn:aws:iam::665192190124:role/project-ocr-cies-role-status-function-local
             - TextractServiceRole=arn:aws:iam::665192190124:role/project-ocr-cies-role-textract-service-local
             - ALBVisibility=internet-facing
