@@ -1,0 +1,228 @@
+import base64
+import json
+import os
+from datetime import datetime
+from http import HTTPStatus
+
+import boto3
+from aws_lambda_powertools import Logger, Metrics, Tracer
+from aws_lambda_powertools.event_handler import (
+    APIGatewayRestResolver,
+    CORSConfig,
+    Response,
+)
+from aws_lambda_powertools.logging import correlation_paths
+from aws_lambda_powertools.metrics import MetricUnit
+from aws_lambda_powertools.utilities.typing import LambdaContext
+from botocore.exceptions import ClientError
+
+cors_config = CORSConfig(allow_origin="*", max_age=300)
+app = APIGatewayRestResolver(debug=True, cors=cors_config)
+# app = APIGatewayProxyEventV2(debug=True, cors=cors_config)
+tracer = Tracer()
+logger = Logger()
+logger.setLevel('DEBUG')
+metrics = Metrics(namespace="SpiTestApp", service="APP")
+
+s3 = boto3.client('s3')
+sns = boto3.client('sns')
+txt = boto3.client('textract')
+s3_bucket = "cies-spi-gw"
+
+
+
+role_arn = 'arn:aws:iam::721844484694:role/TextractCallServicesRole'
+sns_topic_arn = 'arn:aws:sns:us-east-2:721844484694:CIES-SPI-API-OCR-TOPIC'
+
+def get_secret(secret_name, region_name):
+    """ get username/password from AWS key store, return a dict object
+    """
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+    secret = None
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+        secret = json.loads(get_secret_value_response['SecretString'])
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+
+    return secret
+
+def save_file(filename, fileBlob):
+    print(f"saving file: {filename}")
+    try:
+        s3.put_object(
+        Bucket= s3_bucket,
+        Key=filename,
+        Body=fileBlob
+    )
+    except Exception as e:
+        print(f"Error saving file: {e}")
+
+def save_to_ddb(item):
+    sam_local = os.getenv("AWS_SAM_LOCAL", "false")
+    region = os.getenv("AWS_REGION")
+    table_name = os.getenv("TRACKING_TABLE", "TrackingTable")
+    ddbTable = None
+    if sam_local == "true" :
+        logger.info(f"Running in AWS SAM local: {os.environ}")
+        ddbTable = boto3.resource('dynamodb', endpoint_url="http://dynamo-local:8000").Table(table_name)
+
+    else:
+        logger.info(f"Running in AWS: {os.environ}")
+        ddbTable = boto3.resource('dynamodb', region_name=region).Table(table_name)
+    logger.info(f"ddbTable={ddbTable}, item={item}")
+    # update the database
+    if ddbTable is not None:
+        ddbTable.put_item(
+            Item=item
+        )
+    else:
+        raise Exception("ddbTable is None")
+
+@app.get("/job_id", cors=True)
+@tracer.capture_method
+def get_job_id():
+    metrics.add_metric(name="get_job_id", unit=MetricUnit.Count, value=1)
+    event = app.current_event
+    try:
+        qstr = event.get("queryStringParameters")
+        logger.info(f"Request for job_id received qstr={qstr}")
+
+        job_id = qstr["jobId"]
+        logger.info(f"job_id={job_id}")
+
+        body =  txt.get_document_analysis(JobId=job_id)
+
+        # response = {
+        #     "isBase64Encoded": False,
+        #     "statusCode": HTTPStatus.OK.value,
+        #     "body": json.dumps(body, indent=2),
+        #     "headers": {
+        #         "content-type": "application/json",
+        #     },
+        # }
+        response = Response(
+            status_code =  HTTPStatus.OK.value,
+            body = json.dumps(body, indent=2),
+            content_type = "application/json")
+
+    except Exception as e:
+        # response = {
+        #     "isBase64Encoded": False,
+        #     "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+        #     "body": f"Exception={e}",
+        #     "headers": {
+        #         "content-type": "text/plain",
+        #     },
+        # }
+        response = Response(
+            status_code =  HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            body = f"Exception={e}",
+            content_type = "text/plain")
+    return response
+
+
+@app.post("/ocr", cors=True)
+@tracer.capture_method
+def ocr():
+    logger.info(f"\n\n--->OCR API - Inside ocr  <--\n\n")
+    event = app.current_event
+    # adding custom metrics
+    # See: https://awslabs.github.io/aws-lambda-powertools-python/latest/core/metrics/
+    # logger.info(f"ocr post received: {event}")
+    metrics.add_metric(name="OcrInvocations", unit=MetricUnit.Count, value=1)
+
+    logger.info(f"env: {os.environ}")
+
+    try:
+        isBase64Encoded = event.get("isBase64Encoded")
+        if isBase64Encoded is True:
+            body = base64.b64decode(event['body'])
+        else:
+            body = event['body']
+        logger.info("==>have a body, getting headers<==")
+        headers = event.get("headers")
+        logger.info(f"==>headers={headers}<==")
+        file_name = headers.get("Filename")
+        if file_name is None:
+            raise Exception("Filename is None")
+        logger.info(f"==>saving file {file_name}<==")
+        if body is None:
+            raise Exception("body is None")
+        save_file(file_name, body)
+        logger.info("starting text analysis")
+
+        job_id = txt.start_document_analysis(
+            DocumentLocation={
+                'S3Object': {
+                    'Bucket': s3_bucket,
+                    'Name': file_name
+                }},
+            FeatureTypes=['LAYOUT'],
+            NotificationChannel={'RoleArn': role_arn, 'SNSTopicArn': sns_topic_arn})
+        logger.info(f"job_id={job_id}")
+        # response = {
+        #     "isBase64Encoded": False,
+        #     "statusCode": HTTPStatus.OK.value,
+        #     "body": job_id['JobId'],
+        #     "headers": {
+        #         "content-type": "text/plain",
+        #     },
+        # }
+        response = Response(status_code=HTTPStatus.OK.value,
+                            body={"job_id": job_id},
+                            content_type="application/json")
+        job = {
+            'userId': headers.get('Userid'),
+            'siteId': headers.get('Siteid'),
+            'jobId': job_id['JobId'],
+            'filename': file_name,
+            'jobStatus': 'SUBMITTED',
+            'jobSubmitTime':  datetime.now().isoformat()
+        }
+        save_to_ddb(job)
+
+
+    except Exception as e:
+        logger.error(f"Exception={e}")
+        # traceback.print_exc(file=sys.stdout)
+        # response = {
+        #     "isBase64Encoded": False,
+        #     "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+        #     "body": f"Exception={e}",
+        #     "headers": {
+        #         "content-type": "text/plain",
+        #     },
+        # }
+        response = Response (status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                                                  body=f"Exception={e}",
+                                                  content_type="text/plain")
+
+    logger.info(f"response={vars(response)}")
+    return response
+
+# Enrich logging with contextual information from Lambda
+@logger.inject_lambda_context(log_event=True)
+
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
+# Adding tracer
+# See: https://awslabs.github.io/aws-lambda-powertools-python/latest/core/tracer/
+@tracer.capture_lambda_handler
+# ensures metrics are flushed upon request completion/failure and capturing ColdStart metric
+# @metrics.log_metrics(capture_cold_start_metric=True)
+# @event_parser(model=APIGatewayProxyEventV2Model, envelope=envelopes.ApiGatewayV2Envelope)
+def lambda_handler(event: dict, context: LambdaContext) -> dict:
+    logger.info(f"OCR API - Inside lambda: event {event} context {context}")
+    response = app.resolve(event, context)
+    logger.debug(f"OCR API - Response {response}")
+    return response

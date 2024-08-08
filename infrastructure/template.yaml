@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  spi_api_gw_infrastructure
+
+Parameters:
+  # DomainName:
+  #   Description: The domain name through which the APIGateway will be accessible
+  #   Type: String
+  stage:
+    Description: Name of the APIs stage, note that this is also the "environment"
+    Type: String
+    AllowedValues:
+      - local
+      - dev
+      - prprd
+      - prod
+
+Globals:
+  Api:
+    TracingEnabled: true
+    Cors: # see CORS section
+      AllowOrigin: "'*'"
+      AllowHeaders: "'Content-Type,Authorization,X-Amz-Date'"
+      MaxAge: "'300'"
+    BinaryMediaTypes: # see Binary responses section
+      - "*~1*" # converts to */* for any binary type
+      # NOTE: use this stricter version if you're also using CORS; */* doesn't work with CORS
+      # see: https://github.com/aws-powertools/powertools-lambda-python/issues/3373#issuecomment-1821144779
+      # - "image~1*" # converts to image/*
+      # - "*~1csv" # converts to */csv, eg text/csv, application/csv
+
+Resources:
+  # ========================================================================================================
+  # Users, roles and policies
+  # ========================================================================================================
+  FunctionLoggingPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "project-ocr-cies-logging-${stage}"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+  TextractAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "project-ocr-cies-textract-${stage}"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - textract:DetectDocumentText
+              - textract:AnalyzeDocument
+              - textract:StartDocumentTextDetection
+              - textract:StartDocumentAnalysis
+              - textract:GetDocumentTextDetection
+              - textract:GetDocumentAnalysis
+            Resource: "*"
+  # The presence of s3:ListBucket changes the behavior of the headObject operation.
+  # With the s3:ListBucket permission the headObject operation will return a 404(not found) when the given key does not exist.
+  # Without the s3:ListBucket permission the headObject operation will return a 403(forbidden) when the given key does not exist,
+  # which may make sense from a strict security perspective but it makes it impossible to tell if a key exists or not.
+  FunctionS3BucketAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "project-ocr-cies-bucket-source-${stage}"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+            Resource: "*"
+  SourceS3BucketAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "project-ocr-cies-bucket-source-${stage}"
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+              - s3:GetObjectTagging
+              - s3:GetObjectVersionTagging
+            Resource: arn:aws:s3:::*
+
+  StatusFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "project-ocr-cies-role-status-function-${stage}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+        - "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
+        - !Ref TextractAccessPolicy
+        - !Ref FunctionLoggingPolicy
+        - !Ref SourceS3BucketAccessPolicy
+  TextractServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "project-ocr-cies-role-textract-service-${stage}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - textract.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+        - !Ref TextractAccessPolicy
+        - !Ref FunctionLoggingPolicy
+        - !Ref SourceS3BucketAccessPolicy
+
+  # ========================================================================================================
+  # Outputs must include any identifiers which are needed for Application resources.
+  # Typically the values output here are passed to the Application resource template
+  # through the samconfig.toml file.
+  # ========================================================================================================
+Outputs:
+  StatusFunctionRole:
+    Description: "Lambda function role for status registration and notification"
+    Value: !Ref StatusFunctionRole
+
+  TextractServiceRole:
+    Description: "Lambda function role for Textract access"
+    Value: !Ref TextractServiceRole

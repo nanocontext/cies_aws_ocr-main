@@ -1,0 +1,102 @@
+version: 0.1
+
+# Notes: ARN references within the associated SAM template to some resources are defined
+# by naming convention, not by Reference, to avoid circular references. GovCloud ARNs use
+# a different scheme name 'aws-us-gov' instead of 'aws'.
+# For example, a reference to an ALB Target Group in commercial (local) deployment is:
+# arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-doc-local/*
+# whereas in the GovCloud dev deployment it becomes:
+# arn:aws-us-gov:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-doc-dev/*
+#
+# ALBVisibility determines whether the ALB is internet facing or only accessible from a VPC. For all deployment
+# except for local testing this value MUST be 'internal'. For 'local' deployment the value may be internet-facing,
+# in which case adding WAF that restricts access to only the developer IP to the ALB is highly recommended. External
+# IPs in the AWS range will be probed within minutes of endpoint creation.
+
+dev:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'project-ocr-app-dev'
+            s3_bucket: 'project-ocr-dev-cies-spi-gw'
+            s3_prefix: 'spi-ocr-app-dev'
+            region: 'us-gov-east-1'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=DEBUG
+            - stage=dev
+            - subnets=subnet-036a2ccb601ab0463,subnet-03a759ff00a2b2174
+            - StatusFunctionRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-status-function-dev
+            - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-dev
+            - ALBVisibility=internal
+            - ARNScheme=aws-us-gov
+            - ALBLogBucket=project-ocr-loadbalancerlog-dev
+            - VPC=vpc-00a2414d9686116f1
+            
+preprod:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'project-spi-ocr-app-preprod'
+            s3_bucket: 'project-ocr-preprod-cies-spi-gw'
+            s3_prefix: 'spi-ocr-app-preprod'
+            region: 'us-gov-east-1'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=INFO
+            - stage=prprd
+            - subnets=subnet-0ffcf91a8634ae2c6,subnet-054227598f4a06140
+            - StatusFunctionRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-status-function-preprod
+            - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-preprod
+            - ALBVisibility=internal
+            - ARNScheme=aws-us-gov
+            - ALBLogBucket=project-ocr-loadbalancerlog-preprod
+            - VPC=vpc-06dbfd655b53de4a8
+            
+prod:
+    deploy:
+        parameters:
+            resolve_s3: false
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'project-spi-ocr-app-prod'
+            s3_bucket: 'project-ocr-prod-cies-spi-gw'
+            s3_prefix: 'spi-ocr-app-prod'
+            region: 'us-gov-east-1'
+            disable_rollback: false
+            parameter_overrides:
+            - LogLevel=WARN
+            - stage=prod
+            - subnets=subnet-0505255c5fca62d8a,subnet-027cdb68d9594cb6a
+            - StatusFunctionRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-status-function-prod
+            - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-prod
+            - ALBVisibility=internal
+            - ARNScheme=aws-us-gov
+            - ALBLogBucket=project-ocr-loadbalancerlog-prod
+            - VPC=vpc-08f3d1c2c27f5f43f
+
+# Following this point are configurations for developer local environment.
+ctb:
+    deploy:
+        parameters:
+            resolve_s3: true
+            capabilities: CAPABILITY_IAM
+            confirm_changeset: true
+            stack_name: 'spi-ocr-app-local'
+            s3_prefix: 'spi-ocr-app-local'
+            region: 'us-east-1'
+            disable_rollback: false
+            parameter_overrides:
+            - stage=local
+            - LogLevel=DEBUG
+            - subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf
+            - StatusFunctionRole=arn:aws:iam::665192190124:role/project-ocr-cies-role-status-function-local
+            - TextractServiceRole=arn:aws:iam::665192190124:role/project-ocr-cies-role-textract-service-local
+            - ALBVisibility=internet-facing
+            - ARNScheme=aws
+            - ALBLogBucket=project-ocr-loadbalancerlog-local
+            - VPC=vpc-94fb46ee

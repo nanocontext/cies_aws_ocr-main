@@ -1,0 +1,68 @@
+version: 0.1
+
+local:
+    deploy:
+        parameters:
+            stack_name: 'spi-ocr-app-infrastructure-local'
+            resolve_s3: true
+            s3_prefix: 'spi-ocr-app-local'
+            region: 'us-east-1'
+            environment: 'local'
+            confirm_changeset: true
+            capabilities: CAPABILITY_NAMED_IAM
+            disable_rollback: false
+            parameter_overrides:
+                stage=local
+
+ctb:
+    deploy:
+        parameters:
+            stack_name: 'spi-ocr-app-infrastructure-local'
+            resolve_s3: true
+            s3_prefix: 'spi-ocr-app-local'
+            region: 'us-east-1'
+            environment: 'local'
+            confirm_changeset: true
+            capabilities: CAPABILITY_NAMED_IAM
+            disable_rollback: false
+            parameter_overrides:
+                stage=local
+
+dev:
+    deploy:
+        parameters:
+            stack_name: 'spi-ocr-app-infrastructure-dev'
+            resolve_s3: true
+            s3_prefix: 'spi-ocr-app-dev'
+            region: 'us-east-2'
+            Stage: 'dev'
+            confirm_changeset: true
+            capabilities: CAPABILITY_NAMED_IAM
+            disable_rollback: false
+            parameter_overrides: stage=dev
+
+preprod:
+    deploy:
+        parameters:
+            stack_name: 'spi-ocr-app-infrastructure-preprod'
+            resolve_s3: true
+            s3_prefix: 'spi-ocr-app-preprod'
+            region: 'us-east-2'
+            Stage: 'preprod'
+            confirm_changeset: true
+            capabilities: CAPABILITY_NAMED_IAM
+            disable_rollback: false
+            parameter_overrides: stage=preprod
+
+prod:
+    deploy:
+        parameters:
+            stack_name: 'spi-ocr-app-infrastructure-prod'
+            resolve_s3: true
+            s3_prefix: 'spi-ocr-app-prod'
+            region: 'us-east-2'
+            Stage: 'prod'
+            confirm_changeset: true
+            capabilities: CAPABILITY_NAMED_IAM
+            disable_rollback: false
+            parameter_overrides: stage=prod

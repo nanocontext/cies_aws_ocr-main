@@ -1,0 +1,441 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  spi_api_gw
+
+Parameters:
+  # DomainName:
+  #   Description: The domain name through which the APIGateway will be accessible
+  #   Type: String
+  stage:
+    Description: Name of the APIs stage, note that this is also the "environment"
+    Type: String
+    AllowedValues:
+      - local
+      - dev
+      - prprd
+      - prod
+
+  subnets:
+    Description: Subnets to assign to the Load Balancer
+    Type: CommaDelimitedList
+
+  LogLevel:
+    Description: setting for the log level of the functions
+    Type: String
+
+  StatusFunctionRole:
+    Description: Role in which the Lambda functions operate
+    Type: String
+  
+  TextractServiceRole:
+    Description: Role in which Textract operates
+    Type: String
+
+  ALBVisibility:
+    Description: The desired visibility of the Application Load Balancer
+    Type: String
+    AllowedValues:
+      - internet-facing
+      - internal
+  
+  ARNScheme:
+    Description: The scheme for the ARN values, 'aws' for Commercial AWS, 'aws-us-gov' for GovCloud
+    Type: String
+    AllowedValues:
+      - 'aws'
+      - 'aws-us-gov'
+
+  ALBLogBucket:
+    Description: The S3 bucket for the ALB access logs
+    Type: String
+
+  VPC:
+    Description: The VPC in which the ALB resides
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: python3.11
+    Tags:
+      Environment: !Ref stage
+    Environment:
+      Variables:
+        LOG_LEVEL: !Ref LogLevel
+        POWERTOOLS_SERVICE_NAME: !Sub "project-cies-${stage}"
+        TEXTRACT_SERVICE_ROLE: !Ref TextractServiceRole
+        TEXTRACT_STATUS_TOPIC: !Ref TextractStatusTopic
+
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    # LoggingConfig:
+    #   LogFormat: JSON
+    #   ApplicationLogLevel: DEBUG
+  Api:
+    TracingEnabled: true
+    Cors: # see CORS section
+      AllowOrigin: "'*'"
+      AllowHeaders: "'Content-Type,Authorization,X-Amz-Date'"
+      MaxAge: "'300'"
+    BinaryMediaTypes: # see Binary responses section
+      - "*~1*" # converts to */* for any binary type
+      # NOTE: use this stricter version if you're also using CORS; */* doesn't work with CORS
+      # see: https://github.com/aws-powertools/powertools-lambda-python/issues/3373#issuecomment-1821144779
+      # - "image~1*" # converts to image/*
+      # - "*~1csv" # converts to */csv, eg text/csv, application/csv
+
+Resources:
+  # ========================================================================================================
+  # Queues and Topics
+  # ========================================================================================================
+
+  # Textract notifies of OCR completion
+  TextractStatusTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "AmazonTextractOCR-${stage}-CIES-APP-SIP-API-TOPIC"
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+
+  # ========================================================================================================
+  # S3 Buckets
+  # ========================================================================================================
+  # The S3 Bucket where documents are posted
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "project-ocr-cies-bucket-source-${stage}"
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Function: !GetAtt NewDocumentFunction.Arn
+          
+  # The S3 bucket where the Textract results are stored
+  DestinationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "project-ocr-cies-bucket-destination-${stage}"
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: "Stack"
+          Value: !Sub "${AWS::StackName}"
+
+  # ========================================================================================================
+  # The Load Balancer that fronts the Lambda functions
+  # ========================================================================================================
+  CiesApplicationLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "project-ocr-cies-sg-${stage}"
+      GroupDescription: "The security group for the CIES Application Load Balancer"
+      VpcId: !Sub "${VPC}"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 10400
+          ToPort: 10400
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  CiesApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: "application"
+      IpAddressType: ipv4
+      Name: !Sub "project-ocr-cies-alb-${stage}"
+      Scheme: !Sub "${ALBVisibility}"
+      Subnets: !Ref subnets
+      SecurityGroups: 
+        - !GetAtt CiesApplicationLoadBalancerSecurityGroup.GroupId
+      # See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-loadbalancer-loadbalancerattribute.html
+      LoadBalancerAttributes:
+        - Key: "idle_timeout.timeout_seconds"
+          Value: 60
+        - Key: "client_keep_alive.seconds"
+          Value: 3600
+        - Key: "routing.http.preserve_host_header.enabled"
+          Value: "true"
+        - Key: "deletion_protection.enabled"
+          Value: "true"
+        - Key: "load_balancing.cross_zone.enabled"
+          Value: "true"
+        - Key: "access_logs.s3.enabled"
+          Value: "true"
+        - Key: "access_logs.s3.bucket"
+          Value: !Ref ALBLogBucket
+  CiesApplicationListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: 400
+            ContentType: "text/plain"
+            MessageBody: "Bad Request, not mapped by the ELB listener"
+      LoadBalancerArn: !Ref CiesApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  # ========================================================================================================
+  # OCR REST Lambdas
+  # ========================================================================================================
+  # Submit the document to be OCR's: POST https://service.domain.tld/<document identifier>
+  DocumentFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: CiesApplicationListener
+    Properties:
+      FunctionName: !Sub "project-cies-document-${stage}"
+      Handler: document_handler.lambda_handler
+      CodeUri: src
+      Description: POST, HEAD and GET of a document submitted for OCR
+      Role: !Ref StatusFunctionRole
+      Tracing: Active
+      Timeout: 30
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: SubmitTextSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          POWERTOOLS_DEV : True
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:  !Ref StatusTrackingTableName
+      Tags:
+        LambdaPowertools: python
+  DocumentFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt DocumentFunction.Arn
+      Principal: elasticloadbalancing.amazonaws.com
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-doc-${stage}/*"
+  DocumentFunctionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: DocumentFunctionPermission
+    Properties:
+      Name: !Sub "project-cies-doc-${stage}"
+      IpAddressType: ipv4
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt DocumentFunction.Arn
+      HealthCheckEnabled: false
+  DocumentFunctionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref DocumentFunctionTargetGroup
+      Conditions:
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - POST
+              - PUT
+              - HEAD
+              - GET
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - "/*"
+      ListenerArn: !Ref CiesApplicationListener
+      Priority: 3
+
+  # Get a URL to which a document can be POSTed. The URL references the source S3 bucket directly
+  PresignedURLFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: CiesApplicationListener
+    Properties:
+      FunctionName: !Sub "project-cies-presignedurl-${stage}"
+      Handler: presigned_url_handler.lambda_handler
+      CodeUri: src
+      Description: GET a presigned URL of a location to POST a document
+      Role: !Ref StatusFunctionRole
+      Tracing: Active
+      Timeout: 30
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+  PresignedURLFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PresignedURLFunction.Arn
+      Principal: elasticloadbalancing.amazonaws.com
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-presignedurl-${stage}/*"
+  PresignedURLFunctionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: PresignedURLFunctionPermission
+    Properties:
+      Name: !Sub "project-cies-presignedurl-${stage}"
+      IpAddressType: ipv4
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt PresignedURLFunction.Arn
+      HealthCheckEnabled: false
+  PresignedURLFunctionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref PresignedURLFunctionTargetGroup
+      Conditions:
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - GET
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - "/presignedurl/*"
+      ListenerArn: !Ref CiesApplicationListener
+      Priority: 1
+
+  # Get the (OCR'd) text of a document: GET https://service.domain.tld/text/<document identifier>
+  GetTextFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: CiesApplicationListener
+    Properties:
+      FunctionName: !Sub "project-cies-gettext-${stage}"
+      Handler: text_handler.lambda_handler
+      CodeUri: src
+      Description: get text results function
+      Role: !Ref StatusFunctionRole
+      Tracing: Active
+      Timeout: 30
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: GetTextSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+      Tags:
+        LambdaPowertools: python
+  GetTextFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt GetTextFunction.Arn
+      Principal: elasticloadbalancing.amazonaws.com
+      # SourceArn: !Ref GetTextFunctionTargetGroup
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-gettext-${stage}/*"
+  GetTextFunctionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: GetTextFunctionPermission
+    Properties:
+      Name: !Sub "project-cies-gettext-${stage}"
+      IpAddressType: ipv4
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt GetTextFunction.Arn
+      HealthCheckEnabled: false
+  GetTextFunctionListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref GetTextFunctionTargetGroup
+      Conditions:
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - GET
+        - Field: path-pattern
+          PathPatternConfig:
+            Values:
+              - "/text/*"
+      ListenerArn: !Ref CiesApplicationListener
+      Priority: 2
+
+  NewDocumentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "project-cies-newdocument-${stage}"
+      Description: Function to start Textract when a new document has been POSTed
+      Tracing: Active
+      Role: !Ref StatusFunctionRole
+      Handler: ocr_submission_handler.lambda_handler
+      CodeUri: src
+      Timeout: 30
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: SNSFunctionSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
+          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
+      # This event must be commented out before running SAM, once the stack is deployed, then un-comment this and re-run SAM
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: SourceBucket
+            Events:
+              - 's3:ObjectCreated:*'
+  # The Textract completion function is triggered by Textract and publishes the results to SNS, there is no ALB connection
+  TextractCompletionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "project-cies-putstatus-${stage}"
+      Description: Function to respond to Textract result in SNS Topic
+      Tracing: Active
+      Role: !Ref StatusFunctionRole
+      Handler: ocr_notification_handler.lambda_handler
+      CodeUri: src
+      Timeout: 30
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: SNSFunctionSvcName
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          POWERTOOLS_LOG_LEVEL: DEBUG
+          SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
+          DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref TextractStatusTopic
+
+Outputs:
+  GetTextFunction:
+    Description: GET Text Lambda Function ARN
+    Value: !GetAtt GetTextFunction.Arn
+  DocumentFunction:
+    Description: POST, HEAD (status), GET Document Lambda Function ARN
+    Value: !GetAtt DocumentFunction.Arn
+  SNSFunction:
+    Description: SNS Process Textract Topic ARN
+    Value: !GetAtt TextractCompletionFunction.Arn
