@@ -83,7 +83,7 @@ prod:
 ctb:
     deploy:
         parameters:
-            resolve_s3: true
+            resolve_s3: false
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
             stack_name: 'spi-ocr-app-local'

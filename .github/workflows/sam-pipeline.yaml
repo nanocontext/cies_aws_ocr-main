@@ -15,9 +15,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       # sam build 
-      - run: sam build --use-container --config-env=ctb
+      - run: sam build --use-container --config-env ctb
 
 # Run Unit tests- Specify unit tests here 
 
 # sam deploy
-      - run: sam deploy --config-env=ctb --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-local --s3-bucket cies-bipp-deployment --capabilities CAPABILITY_IAM --region us-east-1 
+      - run: sam deploy --config-env ctb --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-local --s3-bucket cies-bipp-deployment --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
