@@ -160,7 +160,7 @@ Resources:
     Description: "This interface is used by the CIES Application Load Balancer"
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SecurityGroups:
+      GroupSet:
         - !GetAtt CiesApplicationLoadBalancerSecurityGroup.GroupId
       SubnetId: !Ref networkInterfaceSubnet
 
