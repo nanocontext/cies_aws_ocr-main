@@ -2,7 +2,7 @@ import base64
 import hashlib
 import hmac
 
-SHARED_SECRET_KEY = 'xyzzy'
+SHARED_SECRET_KEY = 'xyzzyt'
 
 def lambda_handler(event, context):
 

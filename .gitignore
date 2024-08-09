@@ -1,5 +1,5 @@
 .DS_Store
-.aws-sam/**
-infrastructure/.aws-sam/**
+**/.aws-sam
 .idea/**
 .vscode/**
+**/__pycache__
