@@ -185,6 +185,7 @@ Resources:
 
   CiesApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: LoadBalancerLogBucketPolicy
     Properties:
       Type: "application"
       IpAddressType: ipv4
