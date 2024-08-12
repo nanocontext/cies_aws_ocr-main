@@ -125,7 +125,7 @@ Resources:
             Principal:
               AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
             Action: 's3:PutObject'
-            Resource: !Sub 'arn:aws:s3:::${LoadBalancerLogBucket}/*'
+            Resource: !Sub 'arn:aws:s3:::project-ocr-loadbalancerlog-${stage}/*'
 
   # The S3 Bucket where documents are posted
   SourceBucket:
