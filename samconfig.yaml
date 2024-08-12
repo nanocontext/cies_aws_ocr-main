@@ -33,7 +33,7 @@ dev:
             - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-dev
             - ALBVisibility=internal
             - ARNScheme=aws-us-gov
-            - ALBLogBucket=project-ocr-loadbalancerlog-dev
+            - AlbServiceRoleAccount=190560391635
             - VPC=vpc-00a2414d9686116f1
             
 preprod:
@@ -56,7 +56,7 @@ preprod:
             - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-preprod
             - ALBVisibility=internal
             - ARNScheme=aws-us-gov
-            - ALBLogBucket=project-ocr-loadbalancerlog-preprod
+            - AlbServiceRoleAccount=190560391635
             - VPC=vpc-06dbfd655b53de4a8
             
 prod:
@@ -79,7 +79,7 @@ prod:
             - TextractServiceRole=arn:aws-us-gov:iam::136921339394:role/project/project-ocr-cies-role-textract-service-prod
             - ALBVisibility=internal
             - ARNScheme=aws-us-gov
-            - ALBLogBucket=project-ocr-loadbalancerlog-prod
+            - AlbServiceRoleAccount=190560391635
             - VPC=vpc-08f3d1c2c27f5f43f
 
 # Following this point are configurations for developer local environment.
@@ -102,5 +102,5 @@ ctb:
             - TextractServiceRole=arn:aws:iam::665192190124:role/project-ocr-cies-role-textract-service-local
             - ALBVisibility=internet-facing
             - ARNScheme=aws
-            - ALBLogBucket=project-ocr-loadbalancerlog-local
+            - AlbServiceRoleAccount=127311923021
             - VPC=vpc-94fb46ee

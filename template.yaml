@@ -16,6 +16,18 @@ Parameters:
       - prprd
       - prod
 
+  # NOTE: the account ID in which the ALB service runs, these are AWS accounts that are specific
+  # to the AWS region in which the ALB is deployed. Should be one of:
+  #   AWS GovCloud (US-West) – 048591011584
+  #   AWS GovCloud (US-East) – 190560391635
+  #   US East (N. Virginia) – 127311923021
+  #   US East (Ohio) – 033677994240
+  #   US West (N. California) – 027434742980
+  #   US West (Oregon) – 797873946194
+  AlbServiceRoleAccount:
+    Description: The AWS Account ID in which the ALB is deployed
+    Type: String
+
   subnets:
     Description: Subnets to assign to the Load Balancer
     Type: CommaDelimitedList
@@ -114,6 +126,13 @@ Resources:
         - Key: "Stack"
           Value: !Sub "${AWS::StackName}"
 
+  # The presence of s3:ListBucket changes the behavior of the headObject operation.
+  # With the s3:ListBucket permission the headObject operation will return a 404(not found) when the given key does not exist.
+  # Without the s3:ListBucket permission the headObject operation will return a 403(forbidden) when the given key does not exist,
+  # which may make sense from a strict security perspective but it makes it impossible to tell if a key exists or not.
+  # NOTE: the account ID in the Principal reference is one of:
+  #   AWS GovCloud (US-West) – 048591011584
+  #   AWS GovCloud (US-East) – 190560391635
   LoadBalancerLogBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -123,9 +142,19 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 's3:PutObject'
-            Resource: !Sub 'arn:aws:s3:::project-ocr-loadbalancerlog-${stage}/*'
+              AWS: !Sub "arn:${ARNScheme}:iam::${AlbServiceRoleAccount}:root"
+            Action: 
+              - 's3:ListBucket'
+              - 's3:GetBucketLocation'
+            Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${stage}"
+          - Effect: Allow
+            Principal: 
+              AWS: !Sub "arn:${ARNScheme}:iam::${AlbServiceRoleAccount}:root"
+            Action: 
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+            Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${stage}/*"
 
   # The S3 Bucket where documents are posted
   SourceBucket:
