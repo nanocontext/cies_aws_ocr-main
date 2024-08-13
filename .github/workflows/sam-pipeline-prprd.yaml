@@ -1,9 +1,14 @@
+name: BIPP_Preproduction_deployment
 on:
-  push:
-    branches-ignore:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
       - main
 
-# prevents multiple instances of this workflow on the same ref(branch) from running
+# prevents multiple instances of this workflow from running
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,15 +25,18 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
+      # Tag the build with the git commit sha
+      - run: git rev-parse HEAD > .GIT_SHA
+      - run: cat .GIT_SHA
+
+      # sam validate
+      - run: sam validate --config-env ctb
+
       # sam build 
       - run: sam build --use-container --config-env ctb
 
       # Run Unit tests- Specify unit tests here 
 
       # sam deploy
-      - run: sam deploy --config-env ctb --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-local --s3-bucket cies-bipp-deployment --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
-
-      # Run Integration tests- Specify unit tests here
-
-      # sam delete, this removes the entire environment after integration testing is complete
-      #- run: sam delete --config-env ctb --no-confirm-changeset --stack-name cies-bipp-local --region us-east-1
+      - run: sam deploy --config-env prprd --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-local --s3-bucket cies-bipp-deployment --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
