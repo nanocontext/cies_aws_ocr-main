@@ -32,8 +32,10 @@ jobs:
       # The Github Action Variables are also environment specific, enforced by a naming convention.
       # i.e. in "AWS_DEFAULT_VPC_ID" the environment is "DEFAULT", the equivalent for PROD would be "AWS_PROD_VPC_ID"
       # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
-      - run: sam deploy --config-env dev --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{var.AWS_DEFAULT_VPC_ID}} AlbServiceRoleAccount=${{var.AWS_DEFAULT_SERVICE_ACCOUNT_ID}} subnets=${{var.AWS_DEFAULT_SUBNETS}} networkInterfaceSubnet=${{AWS_DEFAULT_NETWORK_INTERFACE_SUBNET}}
+      - run: sam deploy --config-env dev --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=${{vars.AWS_DEFAULT_VPC_ID}} AlbServiceRoleAccount=${{vars.AWS_DEFAULT_SERVICE_ACCOUNT_ID}} subnets=${{vars.AWS_DEFAULT_SUBNETS}} networkInterfaceSubnet=${{vars.AWS_DEFAULT_NETWORK_INTERFACE_SUBNET}}
 
+      # if: ${{ env.DAY_OF_WEEK == 'Monday' }}
+      # run: echo "$Greeting $First_Name. Today is $DAY_OF_WEEK!"
       # Run Integration tests- Specify unit tests here
 
       # sam delete, this removes the entire environment after integration testing is complete
