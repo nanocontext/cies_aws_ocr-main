@@ -27,7 +27,7 @@ jobs:
       #- run: pytest
 
       # sam deploy
-      - run: sam deploy --config-env ctb --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
+      - run: sam deploy --config-env dev --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
 
       # Run Integration tests- Specify unit tests here
 
