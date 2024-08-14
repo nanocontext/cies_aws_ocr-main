@@ -77,7 +77,7 @@ prod:
             - VPC=vpc-08f3d1c2c27f5f43f
 
 # Following this point are configurations for developer local environment.
-ctb:
+default:
     deploy:
         parameters:
             resolve_s3: false
