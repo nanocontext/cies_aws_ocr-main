@@ -35,4 +35,4 @@ jobs:
       # Run Unit tests- Specify unit tests here 
 
       # sam deploy
-      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-local --s3-bucket cies-bipp-deployment --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
+      - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prod --s3-bucket cies-bipp-deployment_prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK
