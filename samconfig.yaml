@@ -19,8 +19,6 @@ dev:
             resolve_s3: false
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
-            stack_name: 'project-ocr-app-dev'
-            s3_bucket: 'project-ocr-dev-cies-spi-gw'
             s3_prefix: 'spi-ocr-app-dev'
             region: 'us-gov-east-1'
             disable_rollback: false
@@ -42,8 +40,6 @@ preprod:
             resolve_s3: false
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
-            stack_name: 'project-spi-ocr-app-preprod'
-            s3_bucket: 'project-ocr-preprod-cies-spi-gw'
             s3_prefix: 'spi-ocr-app-preprod'
             region: 'us-gov-east-1'
             disable_rollback: false
@@ -65,8 +61,6 @@ prod:
             resolve_s3: false
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
-            stack_name: 'project-spi-ocr-app-prod'
-            s3_bucket: 'project-ocr-prod-cies-spi-gw'
             s3_prefix: 'spi-ocr-app-prod'
             region: 'us-gov-east-1'
             disable_rollback: false
