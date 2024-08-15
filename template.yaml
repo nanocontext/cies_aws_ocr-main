@@ -445,7 +445,7 @@ Resources:
       FunctionName: !Sub "project-cies-newdocument-${stage}"
       Description: Function to start Textract when a new document has been POSTed
       Tracing: Active
-      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-status-function-${stage}"
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Handler: ocr_submission_handler.lambda_handler
       CodeUri: src
       Timeout: 30
