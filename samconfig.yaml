@@ -23,13 +23,7 @@ dev:
             disable_rollback: false
             parameter_overrides:
             - LogLevel=DEBUG
-            - stage=dev
-            - subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf
-            - networkInterfaceSubnet=subnet-93aac8cf
             - ALBVisibility=internet-facing
-            - ARNScheme=aws
-            - AlbServiceRoleAccount=127311923021
-            - VPC=vpc-94fb46ee
             
 preprod:
     deploy:
