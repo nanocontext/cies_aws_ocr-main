@@ -4,7 +4,8 @@ local:
     deploy:
         parameters:
             stack_name: 'spi-ocr-app-infrastructure-local'
-            resolve_s3: true
+            s3_bucket: cies-bipp-infrastructure-local
+            resolve_s3: false
             s3_prefix: 'spi-ocr-app-local'
             region: 'us-east-1'
             environment: 'local'
@@ -18,7 +19,8 @@ ctb:
     deploy:
         parameters:
             stack_name: 'spi-ocr-app-infrastructure-local'
-            resolve_s3: true
+            s3_bucket: cies-bipp-infrastructure-local
+            resolve_s3: false
             s3_prefix: 'spi-ocr-app-local'
             region: 'us-east-1'
             environment: 'local'
@@ -32,9 +34,10 @@ dev:
     deploy:
         parameters:
             stack_name: 'spi-ocr-app-infrastructure-dev'
-            resolve_s3: true
+            s3_bucket: cies-bipp-infrastructure-dev
+            resolve_s3: false
             s3_prefix: 'spi-ocr-app-dev'
-            region: 'us-east-2'
+            region: 'us-east-1'
             Stage: 'dev'
             confirm_changeset: true
             capabilities: CAPABILITY_NAMED_IAM
@@ -45,9 +48,10 @@ preprod:
     deploy:
         parameters:
             stack_name: 'spi-ocr-app-infrastructure-preprod'
-            resolve_s3: true
+            s3_bucket: cies-bipp-infrastructure-prprd
+            resolve_s3: false
             s3_prefix: 'spi-ocr-app-preprod'
-            region: 'us-east-2'
+            region: 'us-east-1'
             Stage: 'preprod'
             confirm_changeset: true
             capabilities: CAPABILITY_NAMED_IAM
@@ -58,9 +62,10 @@ prod:
     deploy:
         parameters:
             stack_name: 'spi-ocr-app-infrastructure-prod'
-            resolve_s3: true
+            s3_bucket: cies-bipp-infrastructure-prod
+            resolve_s3: false
             s3_prefix: 'spi-ocr-app-prod'
-            region: 'us-east-2'
+            region: 'us-east-1'
             Stage: 'prod'
             confirm_changeset: true
             capabilities: CAPABILITY_NAMED_IAM

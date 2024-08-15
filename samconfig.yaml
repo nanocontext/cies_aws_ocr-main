@@ -20,7 +20,6 @@ dev:
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
             s3_prefix: 'spi-ocr-app-dev'
-            region: 'us-gov-east-1'
             disable_rollback: false
             parameter_overrides:
             - LogLevel=DEBUG
@@ -39,7 +38,6 @@ preprod:
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
             s3_prefix: 'spi-ocr-app-preprod'
-            region: 'us-gov-east-1'
             disable_rollback: false
             parameter_overrides:
             - LogLevel=INFO
@@ -58,7 +56,6 @@ prod:
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
             s3_prefix: 'spi-ocr-app-prod'
-            region: 'us-gov-east-1'
             disable_rollback: false
             parameter_overrides:
             - LogLevel=WARN
@@ -79,7 +76,6 @@ default:
             confirm_changeset: true
             stack_name: 'spi-ocr-app-local'
             s3_prefix: 'spi-ocr-app-local'
-            region: 'us-east-1'
             disable_rollback: false
             parameter_overrides:
             - stage=local
