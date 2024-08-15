@@ -24,12 +24,12 @@ dev:
             parameter_overrides:
             - LogLevel=DEBUG
             - stage=dev
-            - subnets=subnet-036a2ccb601ab0463,subnet-03a759ff00a2b2174
-            - networkInterfaceSubnet=subnet-036a2ccb601ab0463
-            - ALBVisibility=internal
-            - ARNScheme=aws-us-gov
-            - AlbServiceRoleAccount=190560391635
-            - VPC=vpc-00a2414d9686116f1
+            - subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf
+            - networkInterfaceSubnet=subnet-93aac8cf
+            - ALBVisibility=internet-facing
+            - ARNScheme=aws
+            - AlbServiceRoleAccount=127311923021
+            - VPC=vpc-94fb46ee
             
 preprod:
     deploy:
@@ -45,7 +45,7 @@ preprod:
             - subnets=subnet-0ffcf91a8634ae2c6,subnet-054227598f4a06140
             - networkInterfaceSubnet=subnet-0ffcf91a8634ae2c6
             - ALBVisibility=internal
-            - ARNScheme=aws-us-gov
+            - ARNScheme=aws
             - AlbServiceRoleAccount=190560391635
             - VPC=vpc-06dbfd655b53de4a8
             
@@ -63,7 +63,7 @@ prod:
             - subnets=subnet-0505255c5fca62d8a,subnet-027cdb68d9594cb6a
             - networkInterfaceSubnet=subnet-0505255c5fca62d8a
             - ALBVisibility=internal
-            - ARNScheme=aws-us-gov
+            - ARNScheme=aws
             - AlbServiceRoleAccount=190560391635
             - VPC=vpc-08f3d1c2c27f5f43f
 
