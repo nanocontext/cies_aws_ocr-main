@@ -44,19 +44,19 @@ dev:
             disable_rollback: false
             parameter_overrides: stage=dev
 
-preprod:
+prprd:
     deploy:
         parameters:
-            stack_name: 'spi-ocr-app-infrastructure-preprod'
+            stack_name: 'spi-ocr-app-infrastructure-prprd'
             s3_bucket: cies-bipp-infrastructure-prprd
             resolve_s3: false
-            s3_prefix: 'spi-ocr-app-preprod'
+            s3_prefix: 'spi-ocr-app-prprd'
             region: 'us-east-1'
-            Stage: 'preprod'
+            Stage: 'prprd'
             confirm_changeset: true
             capabilities: CAPABILITY_NAMED_IAM
             disable_rollback: false
-            parameter_overrides: stage=preprod
+            parameter_overrides: stage=prprd
 
 prod:
     deploy:
