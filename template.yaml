@@ -39,18 +39,18 @@ Parameters:
   LogLevel:
     Description: setting for the log level of the functions
     Type: String
-
-  StatusFunctionRole:
-    Description: Role in which the Lambda functions operate
-    Type: String
-  
-  TextractServiceRole:
-    Description: Role in which Textract operates
-    Type: String
+    Default: INFO
+    AllowedValues:
+      - DEBUG
+      - INFO
+      - WARNING
+      - ERROR
+      - CRITICAL
 
   ALBVisibility:
     Description: The desired visibility of the Application Load Balancer
     Type: String
+    Default: internal
     AllowedValues:
       - internet-facing
       - internal
@@ -58,6 +58,7 @@ Parameters:
   ARNScheme:
     Description: The scheme for the ARN values, 'aws' for Commercial AWS, 'aws-us-gov' for GovCloud
     Type: String
+    Default: 'aws-us-gov'
     AllowedValues:
       - 'aws'
       - 'aws-us-gov'
@@ -77,7 +78,7 @@ Globals:
       Variables:
         LOG_LEVEL: !Ref LogLevel
         POWERTOOLS_SERVICE_NAME: !Sub "project-cies-${stage}"
-        TEXTRACT_SERVICE_ROLE: !Ref TextractServiceRole
+        TEXTRACT_SERVICE_ROLE: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project/project-ocr-cies-role-textract-service-${stage}"
         TEXTRACT_STATUS_TOPIC: !Ref TextractStatusTopic
 
     Tracing: Active
@@ -264,7 +265,7 @@ Resources:
       Handler: document_handler.lambda_handler
       CodeUri: src
       Description: POST, HEAD and GET of a document submitted for OCR
-      Role: !Ref StatusFunctionRole
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
       Timeout: 30
       Architectures:
@@ -277,7 +278,7 @@ Resources:
           POWERTOOLS_DEV : True
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
-          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
       Policies:
         - DynamoDBCrudPolicy:
@@ -331,7 +332,7 @@ Resources:
       Handler: presigned_url_handler.lambda_handler
       CodeUri: src
       Description: GET a presigned URL of a location to POST a document
-      Role: !Ref StatusFunctionRole
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
       Timeout: 30
       Architectures:
@@ -340,7 +341,7 @@ Resources:
         Variables:
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
-          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
   PresignedURLFunctionPermission:
     Type: AWS::Lambda::Permission
@@ -386,7 +387,7 @@ Resources:
       Handler: text_handler.lambda_handler
       CodeUri: src
       Description: get text results function
-      Role: !Ref StatusFunctionRole
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Tracing: Active
       Timeout: 30
       Architectures:
@@ -398,7 +399,7 @@ Resources:
           POWERTOOLS_LOG_LEVEL: DEBUG
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
-          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
       Tags:
         LambdaPowertools: python
@@ -444,7 +445,7 @@ Resources:
       FunctionName: !Sub "project-cies-newdocument-${stage}"
       Description: Function to start Textract when a new document has been POSTed
       Tracing: Active
-      Role: !Ref StatusFunctionRole
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Handler: ocr_submission_handler.lambda_handler
       CodeUri: src
       Timeout: 30
@@ -455,7 +456,7 @@ Resources:
           POWERTOOLS_LOG_LEVEL: DEBUG
           SOURCE_BUCKET : !Sub "project-ocr-cies-bucket-source-${stage}"
           DESTINATION_BUCKET : !Sub "project-ocr-cies-bucket-destination-${stage}"
-          TEXTRACT_SERVICE_ROLE : !Ref TextractServiceRole
+          TEXTRACT_SERVICE_ROLE : !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-textract-service-${stage}"
           TEXTRACT_STATUS_TOPIC : !Ref TextractStatusTopic
       # This event must be commented out before running SAM, once the stack is deployed, then un-comment this and re-run SAM
       Events:
@@ -473,7 +474,7 @@ Resources:
       FunctionName: !Sub "project-cies-putstatus-${stage}"
       Description: Function to respond to Textract result in SNS Topic
       Tracing: Active
-      Role: !Ref StatusFunctionRole
+      Role: !Sub "arn:${ARNScheme}:iam::${AWS::AccountId}:role/project-ocr-cies-role-status-function-${stage}"
       Handler: ocr_notification_handler.lambda_handler
       CodeUri: src
       Timeout: 30
