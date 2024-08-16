@@ -1,7 +1,7 @@
 import json
 import os
 import mimetypes
-from src.cies_ocr_core import *
+# from src.cies_ocr_core import *
 
 # cies_ocr_core = CiesOcrCore(
 #     os.getenv('SOURCE_BUCKET'), 
