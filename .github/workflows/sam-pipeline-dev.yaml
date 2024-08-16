@@ -9,34 +9,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-deploy:
+  python-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        pytest
+
+  sam-build-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-      - uses: aws-actions/setup-sam@v1
-      - uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      # sam build 
-      - run: sam build --use-container --config-env ctb
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    - uses: aws-actions/setup-sam@v1
+    - uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    # sam build 
+    - run: sam build --use-container --config-env ctb
 
-      # Run Unit tests- Specify unit tests here 
-      #- run: pytest
+    # validate the SAM template
+    - run: sam validate --lint
 
-      # Use SAM to deploy BIPP
-      # NOTE: the parameter overrides use Github Action Variables, go to /settings/variables/actions from the
-      # root of the Github project.
-      # The Github Action Variables are also environment specific, enforced by a naming convention.
-      # i.e. in "AWS_DEFAULT_VPC_ID" the environment is "DEFAULT", the equivalent for PROD would be "AWS_PROD_VPC_ID"
-      # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
-      - run: "sam deploy --config-env dev --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=dev"
+    # Run Unit tests- Specify unit tests here 
+    #- run: pytest
 
-      # if: ${{ env.DAY_OF_WEEK == 'Monday' }}
-      # run: echo "$Greeting $First_Name. Today is $DAY_OF_WEEK!"
-      # Run Integration tests- Specify unit tests here
+    # Use SAM to deploy BIPP
+    # NOTE: the parameter overrides use Github Action Variables, go to /settings/variables/actions from the
+    # root of the Github project.
+    # The Github Action Variables are also environment specific, enforced by a naming convention.
+    # i.e. in "AWS_DEFAULT_VPC_ID" the environment is "DEFAULT", the equivalent for PROD would be "AWS_PROD_VPC_ID"
+    # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
+    - run: "sam deploy --config-env dev --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=dev"
 
-      # sam delete, this removes the entire environment after integration testing is complete
-      #- run: sam delete --config-env ctb --no-confirm-changeset --stack-name cies-bipp-local --region us-east-1
+    # if: ${{ env.DAY_OF_WEEK == 'Monday' }}
+    #   run: echo "$Greeting $First_Name. Today is $DAY_OF_WEEK!"
+    # -or-
+    # ${{ if eq(variables['Build.SourceBranchName'], 'Development' }}:
+    #   environment: dev
+
+    # Run Integration tests- Specify unit tests here
+
+    # sam delete, this removes the entire environment after integration testing is complete
+    #- run: sam delete --config-env ctb --no-confirm-changeset --stack-name cies-bipp-local --region us-east-1
