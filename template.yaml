@@ -111,7 +111,7 @@ Resources:
   TextractStatusTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub "CIES-APP-SIP-API-TOPIC-${stage}"
+      TopicName: !Sub "CIES-APP-${stage}"
       Tags:
         - Key: "Stack"
           Value: !Sub "${AWS::StackName}"
