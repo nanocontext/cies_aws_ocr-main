@@ -503,7 +503,7 @@ Outputs:
     Value: !GetAtt TextractCompletionFunction.Arn
   CiesApplicationLoadBalancer:
     Description: Application Load Balancer ARN
-    Value: !GetAtt CiesApplicationLoadBalancer.Arn
+    Value: !GetAtt CiesApplicationLoadBalancer.LoadBalancerArn
   CiesApplicationLoadBalancerDNS:
     Description: Application Load Balancer DNS Name
     Value: !GetAtt CiesApplicationLoadBalancer.DNSName
