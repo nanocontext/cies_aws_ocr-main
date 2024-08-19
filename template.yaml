@@ -305,12 +305,17 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: DocumentFunctionPermission
     Properties:
-      Name: !Sub "project-cies-doc-${ResourceSuffix}"
+      Name: !Sub "doc-${ResourceSuffix}"
       IpAddressType: ipv4
       TargetType: lambda
       Targets:
         - Id: !GetAtt DocumentFunction.Arn
       HealthCheckEnabled: false
+      Tags:
+        - Key: "project"
+          Value: "CIES-OCR"
+        - Key: "environment"
+          Value: !Sub "${stage}"
   DocumentFunctionListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
@@ -363,12 +368,17 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: PresignedURLFunctionPermission
     Properties:
-      Name: !Sub "project-cies-presignedurl-${ResourceSuffix}"
+      Name: !Sub "prsgn-${ResourceSuffix}"
       IpAddressType: ipv4
       TargetType: lambda
       Targets:
         - Id: !GetAtt PresignedURLFunction.Arn
       HealthCheckEnabled: false
+      Tags:
+        - Key: "project"
+          Value: "CIES-OCR"
+        - Key: "environment"
+          Value: !Sub "${stage}"
   PresignedURLFunctionListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
@@ -424,12 +434,17 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: GetTextFunctionPermission
     Properties:
-      Name: !Sub "project-cies-gettext-${ResourceSuffix}"
+      Name: !Sub "gettext-${ResourceSuffix}"
       IpAddressType: ipv4
       TargetType: lambda
       Targets:
         - Id: !GetAtt GetTextFunction.Arn
       HealthCheckEnabled: false
+      Tags:
+        - Key: "project"
+          Value: "CIES-OCR"
+        - Key: "environment"
+          Value: !Sub "${stage}"
   GetTextFunctionListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
     Properties:
