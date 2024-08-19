@@ -106,7 +106,7 @@ Resources:
     Properties:
       # TopicName: !Sub "AmazonTextract-OCR-CIES-APP-SIP-API-TOPIC-${ResourceSuffix}"
       # TopicName: !Sub "AmazonTextractOCR-${stage}-CIES-APP-SIP-API-TOPIC"
-      TopicName: !Sub "AmazonTextractOCR-${stage}-5"
+      TopicName: !Sub "AmazonTextractOCR-${ResourceSuffix}"
       Tags:
         - Key: "Stack"
           Value: !Sub "${stage}"
