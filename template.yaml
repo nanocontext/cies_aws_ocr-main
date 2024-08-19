@@ -67,6 +67,14 @@ Parameters:
     Description: The VPC in which the ALB resides
     Type: String
 
+  ALBDeletionProtection:
+    Description: Whether or not to protect the ALB from deletion
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
 Globals:
   Function:
     Timeout: 30
@@ -226,13 +234,13 @@ Resources:
         - !GetAtt CiesApplicationLoadBalancerSecurityGroup.GroupId
       # See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-loadbalancer-loadbalancerattribute.html
       LoadBalancerAttributes:
+        - Key: "deletion_protection.enabled"
+          Value: "false"
         - Key: "idle_timeout.timeout_seconds"
           Value: 60
         - Key: "client_keep_alive.seconds"
           Value: 3600
         - Key: "routing.http.preserve_host_header.enabled"
-          Value: "true"
-        - Key: "deletion_protection.enabled"
           Value: "true"
         - Key: "load_balancing.cross_zone.enabled"
           Value: "true"
