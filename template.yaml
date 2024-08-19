@@ -160,7 +160,7 @@ Resources:
               - 's3:PutObject'
               - 's3:DeleteObject'
             # Resource: !Ref LoadBalancerLogBucket
-            Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${ResourceSuffix}"
+            Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${ResourceSuffix}/*"
 
   # The S3 Bucket where documents are posted
   SourceBucket:
