@@ -10,11 +10,6 @@ Parameters:
   stage:
     Description: Name of the APIs stage, note that this is also the "environment"
     Type: String
-    AllowedValues:
-      - local
-      - dev
-      - prprd
-      - prod
 
   # NOTE: the account ID in which the ALB service runs, these are AWS accounts that are specific
   # to the AWS region in which the ALB is deployed. Should be one of:
