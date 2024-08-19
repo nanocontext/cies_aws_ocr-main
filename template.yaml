@@ -228,7 +228,7 @@ Resources:
     Properties:
       Type: "application"
       IpAddressType: ipv4
-      Name: !Sub "project-ocr-cies-alb-${ResourceSuffix}"
+      Name: !Sub "project-ocr-cies-${ResourceSuffix}"
       Scheme: !Sub "${ALBVisibility}"
       Subnets: !Ref subnets
       SecurityGroups: 
