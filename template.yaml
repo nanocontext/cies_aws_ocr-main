@@ -104,7 +104,8 @@ Resources:
   TextractStatusTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub "AmazonTextractOCR-CIES-APP-SIP-API-TOPIC-${ResourceSuffix}"
+      # TopicName: !Sub "AmazonTextract-OCR-CIES-APP-SIP-API-TOPIC-${ResourceSuffix}"
+      TopicName: !Sub "AmazonTextractOCR-${stage}-CIES-APP-SIP-API-TOPIC"
       Tags:
         - Key: "Stack"
           Value: !Sub "${stage}"
