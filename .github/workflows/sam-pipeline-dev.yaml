@@ -63,7 +63,9 @@ jobs:
     # The Github Action Variables are also environment specific, enforced by a naming convention.
     # i.e. in "AWS_DEFAULT_VPC_ID" the environment is "DEFAULT", the equivalent for PROD would be "AWS_PROD_VPC_ID"
     # The DEFUALT values are used for the 'dev' environment(s), PRPRD and PROD are both specific to their respective environments
-    - run: sam deploy --config-env dev-${{ github.ref }} --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev-${{ github.run_id }} --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=dev-${{ github.ref }} ALBVisibility=internet-facing ALBDeletionProtection=false
+    # ResourceSuffix and env are the same value for 'prprd' and 'prod' deployment. 'dev' deployments are assigned a unique
+    # ResourceSuffix to allow treatment as ephemeral instances. 'dev' instances are created and destroyed on each build.
+    - run: sam deploy --config-env dev-${{ github.ref }} --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-dev-${{ github.run_id }} --s3-bucket cies-bipp-deployment-dev --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=dev ResourceSuffix=dev-${{ github.ref }} ALBVisibility=internet-facing
 
     # if: ${{ env.DAY_OF_WEEK == 'Monday' }}
     #   run: echo "$Greeting $First_Name. Today is $DAY_OF_WEEK!"
