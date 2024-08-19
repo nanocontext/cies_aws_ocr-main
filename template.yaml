@@ -147,7 +147,7 @@ Resources:
             Action: 
               - 's3:ListBucket'
               - 's3:GetBucketLocation'
-            Resource: !GetAtt LoadBalancerLogBucket.LoadBalancerArn
+            Resource: !GetAtt LoadBalancerLogBucket.Arn
           - Effect: Allow
             Principal: 
               AWS: !Sub "arn:${ARNScheme}:iam::${AlbServiceRoleAccount}:root"
@@ -155,7 +155,7 @@ Resources:
               - 's3:GetObject'
               - 's3:PutObject'
               - 's3:DeleteObject'
-            Resource: !GetAtt LoadBalancerLogBucket.LoadBalancerArn
+            Resource: !GetAtt LoadBalancerLogBucket.Arn
 
   # The S3 Bucket where documents are posted
   SourceBucket:
