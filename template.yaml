@@ -149,7 +149,7 @@ Resources:
             Action: 
               - 's3:ListBucket'
               - 's3:GetBucketLocation'
-            Resource: !GetAtt LoadBalancerLogBucket.Name
+            Resource: !Ref LoadBalancerLogBucket
             # Resource: !GetAtt LoadBalancerLogBucket.Arn
             # Resource: !Sub "arn:${ARNScheme}:s3:::project-ocr-loadbalancerlog-${ResourceSuffix}"
           - Effect: Allow
@@ -159,7 +159,7 @@ Resources:
               - 's3:GetObject'
               - 's3:PutObject'
               - 's3:DeleteObject'
-            Resource: !GetAtt LoadBalancerLogBucket.Name
+            Resource: !Ref LoadBalancerLogBucket
 
   # The S3 Bucket where documents are posted
   SourceBucket:
