@@ -268,9 +268,9 @@ Resources:
   # Submit the document to be OCR's: POST https://service.domain.tld/<document identifier>
   DocumentFunction:
     Type: AWS::Serverless::Function
-    DependsOn: CiesApplicationListener
     Properties:
-      FunctionName: !Sub "project-cies-document-${ResourceSuffix}"
+      # Do not change this FunctionName without changing the SourceArn of the associated AWS::Lambda::Permission
+      FunctionName: !Sub "project-cies-doc-${ResourceSuffix}"
       Handler: document_handler.lambda_handler
       CodeUri: src
       Description: POST, HEAD and GET of a document submitted for OCR
@@ -300,11 +300,17 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt DocumentFunction.Arn
       Principal: elasticloadbalancing.amazonaws.com
-      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-doc-${ResourceSuffix}/*"
+      # SourceArn: !Ref DocumentFunctionTargetGroup
+      # arn:aws:lambda:us-east-1:665192190124:function:project-cies-doc-dev-1
+      # arn:aws:elasticloadbalancing:us-east-1:665192190124:targetgroup/doc-dev-1/f9b949762207e8a7
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/doc-${ResourceSuffix}/*"
   DocumentFunctionTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    # The AWS::Lambda::Permission MUST be created before this AWS::ElasticLoadBalancingV2::TargetGroup, else the TargetGroup creation will fail,
+    # which also means that the SourceArn of the Permission cannot simply reference the Target Group ARN
     DependsOn: DocumentFunctionPermission
     Properties:
+      # The Name is referenced in the AWS::Lambda::Permission as part of the SourceArn, these must be kept in synch
       Name: !Sub "doc-${ResourceSuffix}"
       IpAddressType: ipv4
       TargetType: lambda
@@ -363,11 +369,12 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt PresignedURLFunction.Arn
       Principal: elasticloadbalancing.amazonaws.com
-      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-presignedurl-${ResourceSuffix}/*"
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/prsgn-${ResourceSuffix}/*"
   PresignedURLFunctionTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: PresignedURLFunctionPermission
     Properties:
+      # The Name is referenced in the AWS::Lambda::Permission as part of the SourceArn, these must be kept in synch
       Name: !Sub "prsgn-${ResourceSuffix}"
       IpAddressType: ipv4
       TargetType: lambda
@@ -429,11 +436,12 @@ Resources:
       FunctionName: !GetAtt GetTextFunction.Arn
       Principal: elasticloadbalancing.amazonaws.com
       # SourceArn: !Ref GetTextFunctionTargetGroup
-      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/project-cies-gettext-${ResourceSuffix}/*"
+      SourceArn: !Sub "arn:${ARNScheme}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/gettext-${ResourceSuffix}/*"
   GetTextFunctionTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: GetTextFunctionPermission
     Properties:
+      # The Name is referenced in the AWS::Lambda::Permission as part of the SourceArn, these must be kept in synch
       Name: !Sub "gettext-${ResourceSuffix}"
       IpAddressType: ipv4
       TargetType: lambda
