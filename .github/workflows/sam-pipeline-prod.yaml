@@ -65,4 +65,4 @@ jobs:
     - run: sam validate --config-env prod
 
     # sam deploy
-    - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prod --s3-bucket cies-bipp-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prod
+    - run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prod --s3-bucket cies-bipp-deployment-prod --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prod ResourceSuffix=prod
