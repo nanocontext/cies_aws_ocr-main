@@ -78,6 +78,7 @@ class CiesOcrCore:
                 Key=document_id,
                 ExpiresIn=self.presigned_url_expiration                
             )
+            logger.debug(f"EXIT get_presigned_post_url({self.source_bucket}, {document_id}, {self.presigned_url_expiration})")
             return response
         except ClientError as e:
             logger.error(f"Error generating presigned post URL: {e}")
