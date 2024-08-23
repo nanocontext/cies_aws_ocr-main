@@ -63,4 +63,4 @@ jobs:
       # Run Unit tests- Specify unit tests here 
 
       # sam deploy
-      - run: sam deploy --config-env prprd --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prprd --s3-bucket cies-bipp-deployment-prprd --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prprd
+      - run: sam deploy --config-env prprd --no-confirm-changeset --no-fail-on-empty-changeset --stack-name cies-bipp-prprd --s3-bucket cies-bipp-deployment-prprd --capabilities CAPABILITY_IAM --region us-east-1 --on-failure ROLLBACK --parameter-overrides VPC=vpc-94fb46ee AlbServiceRoleAccount=127311923021 subnets=subnet-93aac8cf,subnet-0723de9a5e38a2cdf networkInterfaceSubnet=subnet-93aac8cf ARNScheme=aws stage=prprd ResourceSuffix=prprd

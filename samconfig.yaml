@@ -24,7 +24,7 @@ dev:
             disable_rollback: false
             parameter_overrides:
             - LogLevel=DEBUG
-            - ALBVisibility=internet-facing
+            - ALBVisibility=internal
             
 prprd:
     deploy:
@@ -36,8 +36,8 @@ prprd:
             s3_prefix: 'spi-ocr-app-prprd'
             disable_rollback: false
             parameter_overrides:
-            - LogLevel=DEBUG
-            - ALBVisibility=internet-facing
+            - LogLevel=INFO
+            - ALBVisibility=internal
             
 prod:
     deploy:
@@ -49,8 +49,8 @@ prod:
             s3_prefix: 'spi-ocr-app-prod'
             disable_rollback: false
             parameter_overrides:
-            - LogLevel=DEBUG
-            - ALBVisibility=internet-facing
+            - LogLevel=INFO
+            - ALBVisibility=internal
 
 # Following this point are configurations for developer local environment.
 default:
@@ -59,9 +59,8 @@ default:
             resolve_s3: false
             capabilities: CAPABILITY_IAM
             confirm_changeset: true
-            stack_name: 'spi-ocr-app-local'
             s3_prefix: 'spi-ocr-app-local'
             disable_rollback: false
             parameter_overrides:
             - LogLevel=DEBUG
-            - ALBVisibility=internet-facing
+            - ALBVisibility=internal
