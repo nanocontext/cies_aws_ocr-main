@@ -61,7 +61,7 @@ jobs:
     - uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-region: us-east-1
-        role-to-assume: "GitHub_Action"
+        role-to-assume: arn:aws:iam::665192190124:role/GitHub_Action
         #aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         #aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     # sam build 
